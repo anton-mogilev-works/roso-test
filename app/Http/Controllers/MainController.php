@@ -14,13 +14,18 @@ use Illuminate\Support\Facades\Validator;
 class MainController extends Controller
 {
     public function index(): View
-    {
-        $events = Cache::get('events', function() {
-            return Event::all();
-        });        
+    {       
+
+        if(Cache::has('events')) {
+            $events = Cache::get('events');
+        }
+        else {
+            $events = Event::all();
+            Cache::put('events', $events, now()->addMinutes(5));
+        }
 
         return view('main', ['events' => $events]);
-    }    
+    }
 
     public function store(Request $request): RedirectResponse
     {
@@ -28,17 +33,17 @@ class MainController extends Controller
             'title' => 'required|',
             'place' => 'required|',
             'date' => 'required|date_format:d.m.Y',
- 
+
         ]);
 
-        $cachedEvents = Cache::get('events', function() {
+        $events = Cache::get('events', function () {
             return Event::all();
         });
- 
+
         if ($validator->fails()) {
             return redirect('/')
-                        ->withErrors($validator)
-                        ->withInput();
+                ->withErrors($validator)
+                ->withInput();
         }
 
         $event = new Event();
@@ -51,10 +56,10 @@ class MainController extends Controller
         $event->save();
 
         ProcessEvent::dispatch($event);
-        
-        $cachedEvents[] = $event;
 
-        Cache::put('events', $cachedEvents, now()->addMinutes(5));
+        $events[] = $event;
+
+        Cache::put('events', $events, now()->addMinutes(5));
 
         return redirect('/');
     }

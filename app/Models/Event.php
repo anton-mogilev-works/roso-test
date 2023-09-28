@@ -52,13 +52,5 @@ class Event extends Model
         );
     }
 
-    public static function boot()
-    {
-        static::saved(function ($model) {
-
-            $model->period = 3424;
-            $model->save();
-        });        
-
-    }
+   
 }
